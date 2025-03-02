@@ -1,6 +1,5 @@
 <script lang="ts">
   import Canvas from "$lib/Canvas.svelte";
-  import { mindMap } from "$lib/store/mindMap.store";
 
 </script>
 

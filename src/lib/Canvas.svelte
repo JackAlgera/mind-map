@@ -1,68 +1,62 @@
 <script lang="ts">
   import { mindMap } from "$lib/store/mindMap.store";
-  import {type Link, type Node} from "$lib/models/element.model.js";
-  import {findFirstNode, getNewNodePosition} from "$lib/geo";
+  import {type Node} from "$lib/models/element.model.js";
+  import {getNewNodePosition} from "$lib/geo";
 
-  let dragging = false;
+  let movingNode = false;
   let selectedNode : Node | null = null;
-  let nodes : Node[];
-  let links : Link[];
+  let nodesMap : Map<string, Node>;
 
-  let updateNodeLabel = "";
+  let selectedNodeLabel = "";
   let newNodeLabel = "";
 
   $: if (selectedNode) {
-      updateNodeLabel = selectedNode.label;
+      selectedNodeLabel = selectedNode.label;
   }
 
-  mindMap.nodes.subscribe((storedNodes: Node[]) => nodes = storedNodes);
-  mindMap.links.subscribe((storedLinks: Link[]) => links = storedLinks);
+  mindMap.nodes.subscribe((storedNodes: Map<string, Node>) => nodesMap = storedNodes);
 
   function onNodeClick(event: MouseEvent, element: Node) {
       event.stopPropagation();
       selectedNode = element;
-      dragging = true;
+      movingNode = true;
   }
 
   function moveNode(event: MouseEvent) {
-      if (dragging && selectedNode) {
+      if (movingNode && selectedNode) {
           mindMap.updateNodePosition(selectedNode.id, event.offsetX, event.offsetY);
       }
   }
 
   function onMouseUp() {
-      dragging = false;
+      movingNode = false;
   }
 
   function updateNode() {
-      if (selectedNode && updateNodeLabel !== "") {
-          mindMap.updateNodeLabel(selectedNode.id, updateNodeLabel);
+      if (selectedNode && selectedNodeLabel !== "") {
+          mindMap.updateNodeLabel(selectedNode.id, selectedNodeLabel);
       }
   }
 
   function addNode() {
       if (selectedNode && newNodeLabel !== "") {
           let { x, y } = getNewNodePosition(selectedNode);
-          let newNode = mindMap.addNode(newNodeLabel, x, y);
-          mindMap.addLink(selectedNode.id, newNode.id);
+          let newNode = mindMap.addNode(newNodeLabel, x, y, nodesMap.get(selectedNode.id));
           newNodeLabel = "";
       }
   }
 
   function removeNode() {
-      if (selectedNode && nodes.length > 1) {
-          let linksMap = nodes.map(node => node.id)
-              .reduce((map, id) => map.set(id, links.filter(link => link.from === id).map(link => findFirstNode(nodes, link.to))), new Map<string, Node[]>());
-          removeNodeRec(selectedNode, linksMap);
+      if (selectedNode && nodesMap.size > 1) {
+          removeNodeRec(selectedNode.id);
       }
   }
 
-  function removeNodeRec(node: Node, linksMap: Map<string, Node[]>) {
-      let neighbors = linksMap.get(node.id) ?? [];
-      neighbors.forEach(neighbor => {
-          removeNodeRec(neighbor, linksMap);
+  function removeNodeRec(nodeId: string) {
+      nodesMap.get(nodeId)!.children.forEach(child => {
+          removeNodeRec(child);
       });
-      mindMap.removeNode(node.id);
+      mindMap.removeNode(nodeId);
   }
 </script>
 
@@ -100,19 +94,21 @@
   <div class="w-2/4 text-center m-3">
     <button disabled={!selectedNode} onclick={removeNode}>Remove node</button>
     <button disabled={!selectedNode} onclick={updateNode}>Update node</button>
-    <input disabled={!selectedNode} bind:value={updateNodeLabel} />
+    <input disabled={!selectedNode} bind:value={selectedNodeLabel} />
   </div>
 </div>
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <svg width="1000px" height="600px" class="canvas" onmousemove={moveNode} onmouseup={onMouseUp} onmousedown={() => selectedNode = null} >
-  {#each links as link}
-    <line
-        x1={findFirstNode(nodes, link.from).x} y1={findFirstNode(nodes, link.from).y}
-        x2={findFirstNode(nodes, link.to).x} y2={findFirstNode(nodes, link.to).y}
-        stroke="black" stroke-width="2"
-    />
-  {/each}
-  {#each nodes as node}
+  {#each nodesMap.values() as node}
+    {#each node.children as childId}
+      {#if nodesMap.has(childId)}
+      <line
+          x1={node.x} y1={node.y}
+          x2={nodesMap.get(childId)?.x} y2={nodesMap.get(childId)?.y}
+          stroke="black" stroke-width="2"
+      />
+      {/if}
+    {/each}
     <circle
         class:selected={selectedNode && selectedNode.id === node.id}
         cx={node.x}

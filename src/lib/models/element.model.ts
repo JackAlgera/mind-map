@@ -3,6 +3,8 @@ export type Node = {
     x: number;
     y: number;
     label: string;
+    parent: Node | null;
+    children: string[];
 }
 
 export type Link = {
