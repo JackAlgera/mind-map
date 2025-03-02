@@ -29,6 +29,12 @@ function createMindMapStore() {
             );
         },
 
+        updateNodeLabel: (id: string, label: string) => {
+            nodes.update((nodes) =>
+                nodes.map(node => node.id === id ? { ...node, label: label } : node)
+            );
+        },
+
         removeNode: (id: string) => {
             nodes.update((nodes) => nodes.filter(node => node.id !== id));
             links.update((links) => links.filter(link => link.from !== id && link.to !== id));
@@ -37,10 +43,6 @@ function createMindMapStore() {
         addLink: (from: string, to: string) => {
             links.update((links) => [...links, { from, to }]);
         },
-
-        removeLink: (from: string, to: string) => {
-            links.update((links) => links.filter(link => !(link.from === from && link.to === to)));
-        }
     };
 }
 
