@@ -6,29 +6,29 @@
   let movingNode = false;
   let mouseX = 0;
   let mouseY = 0;
-  let selectedNode: Node | null = null;
+  let selectedNodeId: string | null = null;
   let nodesMap: Map<string, Node>;
 
   let selectedNodeLabel = "";
   let newNodeLabel = "";
 
-  $: if (selectedNode) {
-      selectedNodeLabel = selectedNode.label;
+  $: if (selectedNodeId) {
+      selectedNodeLabel = nodesMap.get(selectedNodeId)?.label || "Node not found?";
   }
 
   mindMap.nodes.subscribe((storedNodes: Map<string, Node>) => nodesMap = storedNodes);
 
   function onNodeClick(event: MouseEvent, element: Node) {
       event.stopPropagation();
-      selectedNode = element;
+      selectedNodeId = element.id;
       movingNode = true;
       mouseX = event.offsetX;
       mouseY = event.offsetY;
   }
 
   function moveNode(event: MouseEvent) {
-      if (movingNode && selectedNode) {
-          mindMap.updateNodePosition(selectedNode.id, event.offsetX - mouseX, event.offsetY - mouseY);
+      if (movingNode && selectedNodeId) {
+          mindMap.updateNodePosition(selectedNodeId, event.offsetX - mouseX, event.offsetY - mouseY);
           mouseX = event.offsetX;
           mouseY = event.offsetY;
       }
@@ -39,22 +39,22 @@
   }
 
   function updateNode() {
-      if (selectedNode && selectedNodeLabel !== "") {
-          mindMap.updateNodeLabel(selectedNode.id, selectedNodeLabel);
+      if (selectedNodeId && selectedNodeLabel !== "") {
+          mindMap.updateNodeLabel(selectedNodeId, selectedNodeLabel);
       }
   }
 
   function addNode() {
-      if (selectedNode && newNodeLabel !== "") {
-          let { x, y } = getNewNodePosition(selectedNode);
-          let newNode = mindMap.addNode(newNodeLabel, x, y, nodesMap.get(selectedNode.id));
+      if (selectedNodeId && newNodeLabel !== "") {
+          let { x, y } = getNewNodePosition(nodesMap.get(selectedNodeId)!);
+          mindMap.addNode(newNodeLabel, x, y, selectedNodeId);
           newNodeLabel = "";
       }
   }
 
   function removeNode() {
-      if (selectedNode && nodesMap.size > 1) {
-          removeNodeRec(selectedNode.id);
+      if (selectedNodeId && nodesMap.size > 1) {
+          removeNodeRec(selectedNodeId);
       }
   }
 
@@ -94,17 +94,17 @@
 
 <div class="flex items-center gap-3">
   <div class="w-2/4 text-center m-3">
-    <button disabled={!selectedNode} onclick={addNode}>Add node</button>
-    <input disabled={!selectedNode} bind:value={newNodeLabel} placeholder="Name of the new node" />
+    <button disabled={!selectedNodeId} onclick={addNode}>Add node</button>
+    <input disabled={!selectedNodeId} bind:value={newNodeLabel} placeholder="Name of the new node" />
   </div>
   <div class="w-2/4 text-center m-3">
-    <button disabled={!selectedNode} onclick={removeNode}>Remove node</button>
-    <button disabled={!selectedNode} onclick={updateNode}>Update node</button>
-    <input disabled={!selectedNode} bind:value={selectedNodeLabel} />
+    <button disabled={!selectedNodeId} onclick={removeNode}>Remove node</button>
+    <button disabled={!selectedNodeId} onclick={updateNode}>Update node</button>
+    <input disabled={!selectedNodeId} bind:value={selectedNodeLabel} />
   </div>
 </div>
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<svg width="1000px" height="600px" class="canvas" onmousemove={moveNode} onmouseup={onMouseUp} onmousedown={() => selectedNode = null} >
+<svg width="1000px" height="600px" class="canvas" onmousemove={moveNode} onmouseup={onMouseUp} onmousedown={() => selectedNodeId = null} >
   {#each nodesMap.values() as node}
     {#each node.children as childId}
       {#if nodesMap.has(childId)}
@@ -116,7 +116,7 @@
       {/if}
     {/each}
     <circle
-        class:selected={selectedNode && selectedNode.id === node.id}
+        class:selected={selectedNodeId && selectedNodeId === node.id}
         cx={node.x}
         cy={node.y}
         r="20"

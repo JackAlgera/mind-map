@@ -58,17 +58,17 @@ function createMindMapStore() {
     return {
         nodes: nodesMap,
 
-        addNode: (label: string, x: number, y: number, parent: Node | null = null): Node => {
-            let node = { id: crypto.randomUUID(), x, y, label, parent: parent, children: [] };
+        addNode: (label: string, x: number, y: number, parent: string | null = null) => {
             nodesMap.update((nodesMap) => {
-                nodesMap.set(node.id, node);
-                if (parent) {
-                    parent.children.push(node.id);
-                    nodesMap.set(parent.id, parent);
+                let parentNode = parent ? nodesMap.get(parent) ?? null : null;
+                let newNode: Node = { id: crypto.randomUUID(), x, y, label, parent: parentNode, children: [] };
+                nodesMap.set(newNode.id, newNode);
+                if (parentNode) {
+                    parentNode.children.push(newNode.id);
+                    nodesMap.set(parentNode.id, parentNode);
                 }
                 return nodesMap;
             });
-            return node;
         },
 
         updateNodePosition: (id: string, dx: number, dy: number) => {
