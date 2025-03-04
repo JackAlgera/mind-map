@@ -3,6 +3,9 @@
   import {type Node} from "$lib/models/element.model.js";
   import {getNewNodePosition} from "$lib/geo";
 
+  const CANVAS_WIDTH = 1000;
+  const CANVAS_HEIGHT = 600;
+
   let movingNode = false;
   let mouseX = 0;
   let mouseY = 0;
@@ -13,7 +16,7 @@
   let newNodeLabel = "";
 
   $: if (selectedNodeId) {
-      selectedNodeLabel = nodesMap.get(selectedNodeId)?.label || "Node not found?";
+      selectedNodeLabel = nodesMap.get(selectedNodeId)?.label || "";
   }
 
   mindMap.nodes.subscribe((storedNodes: Map<string, Node>) => nodesMap = storedNodes);
@@ -48,8 +51,10 @@
       if (selectedNodeId && newNodeLabel !== "") {
           let { x, y } = getNewNodePosition(nodesMap.get(selectedNodeId)!);
           mindMap.addNode(newNodeLabel, x, y, selectedNodeId);
-          newNodeLabel = "";
+      } else {
+          mindMap.addNode(newNodeLabel, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
       }
+      newNodeLabel = "";
   }
 
   function removeNode() {
@@ -94,8 +99,8 @@
 
 <div class="flex items-center gap-3">
   <div class="w-2/4 text-center m-3">
-    <button disabled={!selectedNodeId} onclick={addNode}>Add node</button>
-    <input disabled={!selectedNodeId} bind:value={newNodeLabel} placeholder="Name of the new node" />
+    <button onclick={addNode}>Add node</button>
+    <input bind:value={newNodeLabel} placeholder="Name of the new node" />
   </div>
   <div class="w-2/4 text-center m-3">
     <button disabled={!selectedNodeId} onclick={removeNode}>Remove node</button>
@@ -104,7 +109,7 @@
   </div>
 </div>
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<svg width="1000px" height="600px" class="canvas" onmousemove={moveNode} onmouseup={onMouseUp} onmousedown={() => selectedNodeId = null} >
+<svg width="{CANVAS_WIDTH}px" height="{CANVAS_HEIGHT}px" class="canvas" onmousemove={moveNode} onmouseup={onMouseUp} onmousedown={() => selectedNodeId = null} >
   {#each nodesMap.values() as node}
     {#each node.children as childId}
       {#if nodesMap.has(childId)}
