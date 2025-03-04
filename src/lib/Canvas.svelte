@@ -4,8 +4,10 @@
   import {getNewNodePosition} from "$lib/geo";
 
   let movingNode = false;
-  let selectedNode : Node | null = null;
-  let nodesMap : Map<string, Node>;
+  let mouseX = 0;
+  let mouseY = 0;
+  let selectedNode: Node | null = null;
+  let nodesMap: Map<string, Node>;
 
   let selectedNodeLabel = "";
   let newNodeLabel = "";
@@ -20,11 +22,15 @@
       event.stopPropagation();
       selectedNode = element;
       movingNode = true;
+      mouseX = event.offsetX;
+      mouseY = event.offsetY;
   }
 
   function moveNode(event: MouseEvent) {
       if (movingNode && selectedNode) {
-          mindMap.updateNodePosition(selectedNode.id, event.offsetX, event.offsetY);
+          mindMap.updateNodePosition(selectedNode.id, event.offsetX - mouseX, event.offsetY - mouseY);
+          mouseX = event.offsetX;
+          mouseY = event.offsetY;
       }
   }
 

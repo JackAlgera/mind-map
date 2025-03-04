@@ -4,7 +4,7 @@ import {type Node} from "$lib/models/element.model.js";
 function createMindMapStore() {
     const nodesMap = writable<Map<string, Node>>(new Map());
 
-    let node1 : Node = {
+    let node1: Node = {
         id: crypto.randomUUID(),
         x: 500,
         y: 250,
@@ -12,7 +12,7 @@ function createMindMapStore() {
         parent: null,
         children: []
     };
-    let node2 : Node = {
+    let node2: Node = {
         id: crypto.randomUUID(),
         x: 550,
         y: 300,
@@ -20,7 +20,7 @@ function createMindMapStore() {
         parent: node1,
         children: []
     };
-    let node3 : Node = {
+    let node3: Node = {
         id: crypto.randomUUID(),
         x: 600,
         y: 350,
@@ -38,10 +38,27 @@ function createMindMapStore() {
         return nodesMap;
     });
 
+    const fetchBranchNodes = (root: Node, nodes: Set<Node>, nodesMap: Map<string, Node>): Set<Node> => {
+        nodes.add(root);
+
+        if (!root.children || root.children.length === 0) {
+            return nodes;
+        }
+
+        root.children.forEach((childId) => {
+            let child = nodesMap.get(childId);
+            if (child) {
+                fetchBranchNodes(child, nodes, nodesMap);
+            }
+        });
+
+        return nodes;
+    }
+
     return {
         nodes: nodesMap,
 
-        addNode: (label: string, x: number, y: number, parent: Node | null = null) : Node => {
+        addNode: (label: string, x: number, y: number, parent: Node | null = null): Node => {
             let node = { id: crypto.randomUUID(), x, y, label, parent: parent, children: [] };
             nodesMap.update((nodesMap) => {
                 nodesMap.set(node.id, node);
@@ -54,10 +71,12 @@ function createMindMapStore() {
             return node;
         },
 
-        updateNodePosition: (id: string, x: number, y: number) => {
-            nodesMap.update((nodesMap) =>
-                nodesMap.set(id, { ...nodesMap.get(id)!, x, y })
-            );
+        updateNodePosition: (id: string, dx: number, dy: number) => {
+            nodesMap.update((nodesMap) => {
+                fetchBranchNodes(nodesMap.get(id)!, new Set<Node>(), nodesMap)
+                    .forEach((node: Node) => nodesMap.set(node.id, { ...node, x: node.x + dx, y: node.y + dy }));
+                return nodesMap;
+            });
         },
 
         updateNodeLabel: (id: string, label: string) => {
